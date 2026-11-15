@@ -13,6 +13,7 @@ namespace ovc::app {
 std::optional<exam::ExamPackage> loadExamPackage(const CommandLine& commandLine, std::ostream& err);
 
 int runStudent(const CommandLine& commandLine);
+int runExaminer(const CommandLine& commandLine);
 int runSetup(const CommandLine& commandLine);
 
 } // namespace ovc::app
