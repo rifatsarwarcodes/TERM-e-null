@@ -78,8 +78,8 @@ inline std::string describe(bool value) { return value ? "true" : "false"; }
 
 #define CHECK_EQ(actual, expected)                                              \
     do {                                                                        \
-        const auto& test_actual_ = (actual);                                    \
-        const auto& test_expected_ = (expected);                                \
+        const auto test_actual_ = (actual);                                     \
+        const auto test_expected_ = (expected);                                 \
         if (!(test_actual_ == test_expected_))                                  \
             test::reportFailure(__FILE__, __LINE__,                             \
                 "CHECK_EQ(" #actual ", " #expected "): got "                    \
