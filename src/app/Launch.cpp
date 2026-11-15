@@ -1,6 +1,11 @@
 #include "app/Launch.hpp"
 
 #include "app/StudentApp.hpp"
+#include "dashboard/ClassOverviewScreen.hpp"
+#include "dashboard/Dashboard.hpp"
+#include "dashboard/SessionLoader.hpp"
+#include "dashboard/SessionScreen.hpp"
+#include "platform/Console.hpp"
 #include "common/Strings.hpp"
 #include "common/Time.hpp"
 #include "evidence/Seal.hpp"
@@ -24,6 +29,40 @@ std::string askLine(const std::string& question)
     std::string answer;
     std::getline(std::cin, answer);
     return strings::trim(answer);
+}
+
+// Opens the dashboard for the running session when :dashboard is used at a viva.
+class DashboardLauncher final : public IDashboardLauncher {
+public:
+    explicit DashboardLauncher(const exam::ExamPackage& package)
+        : package_(package)
+    {
+    }
+
+    void open(platform::ITerminal& terminal, const fs::path& sessionFolder) override
+    {
+        auto record = std::make_shared<const dashboard::SessionRecord>(
+            dashboard::SessionLoader::load(sessionFolder, &package_));
+        dashboard::Dashboard(std::make_unique<dashboard::SessionScreen>(record)).run(terminal);
+    }
+
+private:
+    const exam::ExamPackage& package_;
+};
+
+bool askExaminerPasscode(const exam::ExamPackage& package)
+{
+    if (!package.passcode) {
+        std::cout << "This exam package has no examiner passcode.\n";
+        return true;
+    }
+    for (int attempt = 1; attempt <= 3; ++attempt) {
+        std::cout << "Examiner passcode: " << std::flush;
+        if (package.passcode->matches(platform::readSecretLine(std::cin, std::cout)))
+            return true;
+        std::cout << "Wrong passcode.\n";
+    }
+    return false;
 }
 
 } // namespace
@@ -115,7 +154,8 @@ int runStudent(const CommandLine& commandLine)
 
     auto terminal = platform::createSystemTerminal();
     auto processes = platform::createSystemProcessRunner();
-    StudentApp app(*terminal, *processes, *package, store, identity, sourceFile);
+    DashboardLauncher launcher(*package);
+    StudentApp app(*terminal, *processes, *package, store, identity, sourceFile, &launcher);
     if (const auto error = app.open()) {
         std::cerr << *error << "\n";
         return 1;
@@ -124,6 +164,32 @@ int runStudent(const CommandLine& commandLine)
     if (app.seal())
         std::cout << "Session sealed. Receipt code: " << app.seal()->receipt << "\n";
     return status;
+}
+
+int runExaminer(const CommandLine& commandLine)
+{
+    const auto package = loadExamPackage(commandLine, std::cerr);
+    if (!package)
+        return 1;
+    if (!askExaminerPasscode(*package))
+        return 1;
+
+    const fs::path path = commandLine.sessionPath ? fs::path(*commandLine.sessionPath) : fs::path(package->sessionsRoot);
+    if (!fs::exists(path)) {
+        std::cerr << "No sessions found at " << path.string() << "\n";
+        return 1;
+    }
+    std::unique_ptr<dashboard::Screen> root;
+    if (fs::exists(path / "session.info"))
+        root = std::make_unique<dashboard::SessionScreen>(
+            std::make_shared<const dashboard::SessionRecord>(dashboard::SessionLoader::load(path, &*package)));
+    else
+        root = std::make_unique<dashboard::ClassOverviewScreen>(path, &*package);
+
+    auto terminal = platform::createSystemTerminal();
+    platform::TerminalGuard guard(*terminal);
+    dashboard::Dashboard(std::move(root)).run(*terminal);
+    return 0;
 }
 
 int runSetup(const CommandLine& commandLine)

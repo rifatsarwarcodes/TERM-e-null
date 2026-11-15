@@ -9,7 +9,7 @@
 
 namespace {
 
-constexpr const char* Version = "ovc 0.9.0";
+constexpr const char* Version = "ovc 1.0.0";
 
 } // namespace
 
@@ -29,9 +29,7 @@ int main(int argc, char** argv)
         case RunMode::Help: std::cout << CommandLine::usage(); return 0;
         case RunMode::Version: std::cout << Version << "\n"; return 0;
         case RunMode::Setup: return runSetup(commandLine);
-        case RunMode::Examiner:
-            std::cerr << "ovc: the examiner dashboard is not part of this build yet.\n";
-            return 1;
+        case RunMode::Examiner: return runExaminer(commandLine);
         case RunMode::Student: return runStudent(commandLine);
         }
     } catch (const std::exception& error) {
