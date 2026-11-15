@@ -46,3 +46,32 @@ TEST_CASE("sha256: reset allows reuse")
     CHECK_EQ(hasher.hexDigest(),
         std::string("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));
 }
+
+#include "crypto/PasscodeHash.hpp"
+
+using ovc::crypto::PasscodeHash;
+
+TEST_CASE("passcode: right passcode matches, wrong one does not")
+{
+    const auto hash = PasscodeHash::create("lab-test-2", 50);
+    CHECK(hash.matches("lab-test-2"));
+    CHECK(!hash.matches("lab-test-3"));
+    CHECK(!hash.matches(""));
+}
+
+TEST_CASE("passcode: encoding round trip")
+{
+    const auto hash = PasscodeHash::create("secret", 20);
+    const auto parsed = PasscodeHash::parse(hash.encode());
+    CHECK(parsed.has_value());
+    CHECK(parsed && parsed->matches("secret"));
+    CHECK(!PasscodeHash::parse("plain-text").has_value());
+    CHECK(!PasscodeHash::parse("sha256-iter:0:aa:bb").has_value());
+}
+
+TEST_CASE("passcode: same passcode gets a different salt each time")
+{
+    const auto first = PasscodeHash::create("same", 5);
+    const auto second = PasscodeHash::create("same", 5);
+    CHECK(first.encode() != second.encode());
+}
