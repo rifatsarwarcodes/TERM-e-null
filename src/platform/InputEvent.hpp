@@ -42,9 +42,12 @@ struct KeyEvent {
     bool isCtrl(char letter) const { return code == KeyCode::Char && ctrl && text.size() == 1 && text[0] == letter; }
 };
 
-// Text that the terminal marked as pasted (bracketed paste mode).
+// Pasted text. `bracketed` is true when the terminal marked it with
+// bracketed-paste markers (certain); false when it was recognised from a
+// burst of keys arriving together (probable).
 struct PasteEvent {
     std::string text;
+    bool bracketed = true;
 };
 
 struct FocusEvent {
