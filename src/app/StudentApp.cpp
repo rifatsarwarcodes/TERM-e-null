@@ -508,7 +508,8 @@ void StudentApp::endSession(const std::string& reason)
     save();
     ended_ = true;
     const std::string text = editor_.buffer().text();
-    files::writeAtomically(session_.store().submissionDir() / fileName(), text);
+    // Named as recorded in session.info, which is what the dashboard checks.
+    files::writeAtomically(session_.store().submissionDir() / session_.exam().info().fileName, text);
 
     Event end(EventType::SessionEnd);
     end.set("reason", reason)
