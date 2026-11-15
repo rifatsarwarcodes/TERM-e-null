@@ -3,7 +3,6 @@
 #include "common/Strings.hpp"
 
 #include <algorithm>
-
 #include <vector>
 
 namespace ovc::build {
