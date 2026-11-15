@@ -1,0 +1,17 @@
+# build output
+/build/
+*.o
+*.d
+*.exe
+ovc
+ovc_tests
+
+# runtime data created while trying the program
+/sessions/
+/playground/
+
+# editors and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
